@@ -1,16 +1,40 @@
-# pms-web — Frontend Skeleton (Round 3)
+# PMS Frontend (`pms_web`)
 
-## What's included in this round
-- Vite + React 18 project setup
-- **Google Material-style MUI theme** (`src/theme/muiTheme.js`): Google Blue `#1a73e8`, Google Sans + Roboto typography, 8px radius, flat elevation matching Google Workspace apps
-- **React Router DOM v7** with `createHashRouter` (URLs look like `/#/login`, `/#/`)
-- **Login** and **Register** pages, centered card layout
-- **JWT dual-token session handling**:
-  - `src/api/tokenStore.js` — access token kept in memory only; refresh token persisted in `localStorage`
-  - `src/api/apiClient.js` — axios instance that attaches `Authorization: Bearer {accessToken}` to every call, and on `401` automatically calls `/api/auth/refresh`, retries the original request, and queues any other requests that 401'd at the same time so only one refresh call is made
-  - `src/features/auth/useAuth.jsx` — `AuthProvider` + `useAuth()`: `login`, `register`, `logout`, and silent session restore on page reload
-- `RoleGuard` route wrapper for protecting pages, with optional `roles={['Admin','Manager']}` restriction
-- `AppLayout` shell (top bar with user avatar + sign out) and a placeholder `DashboardPage`
+React 18 + Vite 6 frontend for the PMS project management system.
+
+## Tech stack
+
+- **React 18** with Vite 6.3
+- **MUI v7** (Material UI) — Google Material theme (Google Blue `#1a73e8`, Google Sans + Roboto)
+- **MUI X-Charts** — BarChart, LineChart for the dashboard
+- **MUI X-Date-Pickers** — date selection
+- **@dnd-kit/core** — Kanban board drag-and-drop between columns
+- **@dnd-kit/sortable** — Project sub-items drag-to-reorder
+- **@dnd-kit/utilities** — CSS transform helpers for sortable
+- **React Router DOM v7** — hash-based routing (`/#/login`, `/#/kanban`, etc.)
+- **Axios** — HTTP client with JWT interceptor
+
+## Routes
+
+| Path | Page |
+|---|---|
+| `/login` | Login |
+| `/register` | Register |
+| `/` | Dashboard (charts) |
+| `/kanban` | Kanban board |
+| `/weekly` | Weekly board |
+| `/projects` | Project list |
+| `/projects/:id` | Project detail (sub-items, file upload) |
+| `/users` | User list (Admin/Manager only) |
+| `/users/:id` | User profile |
+
+## Token refresh flow
+
+1. `apiClient` attaches in-memory access token to requests.
+2. On 401, the interceptor calls `/api/auth/refresh`.
+3. If refresh token (localStorage, 1-day expiry) is valid, backend returns a new access token + rotated refresh token.
+4. If refresh token is invalid/expired, session is cleared and user is redirected to `/login`.
+5. On page reload, `AuthProvider` silently restores the session via refresh token.
 
 ## Setup
 
@@ -19,14 +43,4 @@ npm install
 npm run dev
 ```
 
-The dev server proxies `/api/*` to the backend (`vite.config.js`) — update the `target` to match your `PmsApi` launch URL.
-
-## How the token refresh flow works in the code
-1. `apiClient` attaches the in-memory access token to outgoing requests.
-2. If a request comes back `401` (access token expired after 30 min), the response interceptor calls `refreshRequest()`.
-3. If the refresh token (localStorage, 1-day expiry) is still valid, the backend returns a new access token **and** a rotated refresh token — both are saved via `tokenStore.setSession()`, and the original request is retried transparently.
-4. If the refresh token is invalid/expired, the session is cleared and the user is redirected to `/#/login`.
-5. On full page reload, `AuthProvider` reads the stored refresh token and silently calls `/api/auth/refresh` once to restore the session before rendering protected routes.
-
-## Next round (Round 4)
-Kanban board module: drag-and-drop task cards, columns (Todo/In Progress/Review/Done), project-scoped view.
+Dev server at `http://localhost:5173`, proxies `/api` to `http://localhost:5080`.

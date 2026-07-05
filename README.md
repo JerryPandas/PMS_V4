@@ -1,25 +1,20 @@
-# PMS — Full Project: Setup & Deployment Guide
+# PMS — Project Management System
 
-> This document reflects the CURRENT state of the project, including the post-round bug fixes
-> and the User Management module added afterward. All application text/UI is in **English**.
+## 1. Features
 
----
-
-## 1. What's in the system
-
-| Module                                              | Where                                                          | Notes                                                                                                                       |
-| --------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| JWT dual-token auth (register/login/refresh/logout) | `AuthController` + `useAuth.jsx`                               | Access token 30 min, refresh token 1 day, rotated on each refresh                                                           |
-| Password security                                   | `PasswordHasher.cs`                                            | PBKDF2-HMAC-SHA256, 100,000 iterations, 16-byte salt — passwords are never stored in plain text                             |
-| RBAC (Admin / Manager / Member)                     | `[Authorize(Roles=...)]` everywhere + `RoleGuard.jsx`          | See the permission matrix in §7                                                                                             |
-| Kanban board                                        | `KanbanBoard.jsx` + `TasksController`                          | Todo / InProgress / Review / Done columns, drag between columns                                                             |
-| Team weekly board                                   | `WeeklyBoard.jsx` + `/api/tasks/weekly`, `/drag`               | Cross-person & cross-date drag, confirmation dialog before applying, audit log in `TaskChangeLog`                           |
-| Task detail view                                    | `TaskDetailDialog.jsx` + `GET /api/tasks/{id}`                 | Click any card (on the kanban board OR the weekly board) to see full description, assignee, project, and its change history |
-| Projects & sub-items                                | `ProjectsListPage`, `ProjectDetailPage` + `ProjectsController` | Project code e.g. `26AA01`, sub-items with status                                                                           |
-| File upload                                         | `FileUploadPanel` + `FilesController`                          | 10 MB limit, GUID-subfolder local storage, duplicate detection                                                              |
-| User management                                     | `UsersListPage`, `UserDetailPage` + `UsersController`          | Admin/Manager can edit anyone's profile, role, and active status; Members can edit only their own profile — see §7          |
-| Charts dashboard                                    | `DashboardPage` + `ChartsController`                           | Kanban progress pie, priority breakdown pie, team workload bar chart (MUI X Charts)                                         |
-| Google Material theme                               | `muiTheme.js`                                                  | Google Blue `#1a73e8`, Google Sans + Roboto, Hash routing via React Router DOM v7                                           |
+| Module                                              | Where                                                          | Notes                                                                                                                         |
+| --------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| JWT dual-token auth (register/login/refresh/logout) | `AuthController` + `useAuth.jsx`                               | Access token 30 min (in-memory), refresh token 1 day (localStorage), rotated on each refresh                                  |
+| Password security                                   | `PasswordHasher.cs`                                            | PBKDF2-HMAC-SHA256, 100,000 iterations, 16-byte salt — passwords are never stored in plain text                               |
+| RBAC (Admin / Manager / Member)                     | `[Authorize(Roles=...)]` everywhere + `RoleGuard.jsx`          | See the permission matrix in §7                                                                                               |
+| Kanban board                                        | `KanbanBoard.jsx` + `TasksController`                          | 4 columns (Todo / InProgress / Review / Done), drag cards between columns via **@dnd-kit/core**                               |
+| Team weekly board                                   | `WeeklyBoard.jsx` + `/api/tasks/weekly`, `/drag`               | Week-by-week view, cross-person & cross-date drag-and-drop, confirmation dialog, audit log in `TaskChangeLog`                 |
+| Task detail view                                    | `TaskDetailDialog.jsx` + `GET /api/tasks/{id}`                 | Click any card on Kanban or Weekly board to see full description, assignee, project, and change history                       |
+| Projects & sub-items                                | `ProjectsListPage`, `ProjectDetailPage` + `ProjectsController` | Project code (e.g. `26AA01`), sub-items with status, **drag-to-reorder** via `@dnd-kit/sortable`, double-click inline editing |
+| File upload                                         | `FileUploadPanel` + `FilesController`                          | 10 MB limit, GUID-subfolder local storage, duplicate detection                                                                |
+| User management                                     | `UsersListPage`, `UserDetailPage` + `UsersController`          | Admin/Manager can edit anyone's profile, role, and active status; Members can edit only their own profile                     |
+| Charts dashboard                                    | `DashboardPage` + `ChartsController`                           | Rounded bar charts (progress, priority, workload) + line chart (weekly trend) via **MUI X-Charts**                            |
+| Google Material theme                               | `muiTheme.js`                                                  | Google Blue `#1a73e8`, Google Sans + Roboto, hash-based routing via React Router DOM v7                                       |
 
 ---
 
@@ -71,25 +66,40 @@ Once promoted, that Admin can manage every other user's role and active status f
 
 ---
 
-## 3. Running the frontend (`pms-web`)
+## 3. Running the frontend (`pms_web`)
 
 ```bash
-cd pms-web
+cd pms_web
 npm install
 npm run dev
 ```
 
 - Dev server: `http://localhost:5173`
 - `vite.config.js` proxies `/api/*` to the backend — update the `target` to match your `PmsApi` URL.
-- Because routing is hash-based, deep links look like `http://localhost:5173/#/kanban`. This means the frontend can be hosted as static files on IIS without needing URL-rewrite rules for client-side routes.
-- Vite is pinned to `^6.3.0` (bundles a patched esbuild, fixing the `GHSA-67mh-4wv8-2f99` dev-server CORS advisory) with an `overrides` entry forcing `esbuild >=0.25.0` as a second safety net. Requires **Node.js 18+** (20+ recommended).
+- Hash-based routing means deep links look like `http://localhost:5173/#/kanban`. No URL-rewrite rules needed for client-side routes when hosting as static files (IIS, etc.).
+- Requires **Node.js 18+** (20+ recommended).
+
+### Key dependencies
+
+| Package                                 | Version          | Purpose                                      |
+| --------------------------------------- | ---------------- | -------------------------------------------- |
+| `react` / `react-dom`                   | ^18.3.1          | UI framework                                 |
+| `@mui/material` / `@mui/icons-material` | ^7.0.0 / ^7.3.11 | Material UI component library                |
+| `@mui/x-charts`                         | ^7.18.0          | BarChart, LineChart for dashboard            |
+| `@mui/x-date-pickers`                   | ^7.18.0          | Date pickers                                 |
+| `@dnd-kit/core`                         | ^6.3.1           | Drag-and-drop primitives (Kanban board)      |
+| `@dnd-kit/sortable`                     | ^10.0.0          | Sortable list (project sub-items reordering) |
+| `@dnd-kit/utilities`                    | ^3.2.2           | CSS transform helpers for sortable           |
+| `react-router-dom`                      | ^7.0.1           | Hash-based routing                           |
+| `axios`                                 | ^1.7.7           | HTTP client                                  |
+| `vite`                                  | ^6.3.0           | Build tool & dev server                      |
 
 ### Production build
 
 ```bash
 npm run build
 ```
-Outputs to `pms-web/dist/` — copy that folder to your IIS site's physical path.
+Outputs to `pms_web/dist/` — copy that folder to your IIS site's physical path.
 
 ---
 
@@ -169,7 +179,7 @@ Seed data already includes 2 projects (`26AA01`, `26BB02`) with sub-items and ta
 ## 8. Known gaps / good next steps
 
 - No email verification / password-reset-via-email flow (password resets are done in-app by Admin/Manager, or via SQL for the very first bootstrap)
-- Kanban/weekly drag uses native HTML5 DnD, not a library like `dnd-kit` — works well, but a dedicated DnD library would give smoother animations and touch/mobile support
+- Weekly board still uses native HTML5 DnD (not `@dnd-kit`) — the cross-person/cross-date drag logic is tightly coupled to native events, and migrating it would require rewriting the drop zone detection in `WeeklyBoard.jsx`
 - No automated tests (unit/integration) yet
 - No env-var-based API base URL for the frontend production build yet (see §4)
 - Manager/Admin have equal user-management power (see the security note in §7)
