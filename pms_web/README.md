@@ -16,17 +16,17 @@ React 18 + Vite 6 frontend for the PMS project management system.
 
 ## Routes
 
-| Path | Page |
-|---|---|
-| `/login` | Login |
-| `/register` | Register |
-| `/` | Dashboard (charts) |
-| `/kanban` | Kanban board |
-| `/weekly` | Weekly board |
-| `/projects` | Project list |
+| Path            | Page                                    |
+| --------------- | --------------------------------------- |
+| `/login`        | Login                                   |
+| `/register`     | Register                                |
+| `/`             | Dashboard (charts)                      |
+| `/kanban`       | Kanban board                            |
+| `/weekly`       | Weekly board                            |
+| `/projects`     | Project list                            |
 | `/projects/:id` | Project detail (sub-items, file upload) |
-| `/users` | User list (Admin/Manager only) |
-| `/users/:id` | User profile |
+| `/users`        | User list (Admin/Manager only)          |
+| `/users/:id`    | User profile                            |
 
 ## Token refresh flow
 
